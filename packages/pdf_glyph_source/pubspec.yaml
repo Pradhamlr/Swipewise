@@ -1,0 +1,24 @@
+name: pdf_glyph_source
+description: >-
+  The native half of Layer 1: PDF bytes -> positioned GlyphRuns, via PDFium
+  over dart:ffi. Deliberately thin — it owns the native boundary and performs
+  no geometric reasoning, so every clustering decision stays in
+  statement_parser where it is testable without a PDF engine.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  # Pure-Dart PDFium bindings. Deliberately NOT the `pdfrx` Flutter plugin:
+  # this half has no Flutter dependency, so extraction runs on CI with no
+  # device. The plugin is only needed later, to bundle the native library
+  # into an Android build.
+  pdfrx_engine: ^0.4.6
+  statement_parser:
+    path: ../statement_parser
+
+dev_dependencies:
+  test: ^1.25.0
+  very_good_analysis: ^6.0.0

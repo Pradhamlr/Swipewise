@@ -1,0 +1,21 @@
+name: rewards_engine
+description: >-
+  Pure-Dart reward rule evaluator and cycle allocator. Closed predicate grammar,
+  cap buckets as first-class objects, milestone-aware optimizer. Zero runtime
+  dependencies by design.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+# Deliberately empty. The optimizer must stay dependency-free.
+dependencies:
+
+dev_dependencies:
+  # Property-based testing for the `optimal >= greedy` invariant.
+  glados: ^1.1.7
+  test: ^1.25.0
+  very_good_analysis: ^6.0.0
+  # Only used by the rule-loading tests to read fixture YAML.
+  yaml: ^3.1.2

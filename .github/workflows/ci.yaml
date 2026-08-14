@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The pure-Dart packages carry the parser, the evaluator and the optimizer.
+  # They must build and test with no Flutter, no emulator and no device — that
+  # is the whole point of the boundary, so it gets its own fast job.
+  pure-dart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install melos
+        run: |
+          dart pub global activate melos 6.3.2
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve workspace root
+        run: dart pub get
+
+      - name: Bootstrap
+        run: melos bootstrap
+
+      - name: Purity check (no Flutter in the engine packages)
+        run: dart run tools/check_purity.dart
+
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: melos run analyze
+
+      - name: Analyze tooling
+        run: dart analyze --fatal-infos tools
+
+      # --no-select: scripts with packageFilters otherwise prompt for a package
+      # interactively, which hangs a CI runner.
+      - name: Test
+        run: melos run --no-select test

@@ -1,0 +1,19 @@
+name: statement_parser
+description: >-
+  Pure-Dart statement pipeline: positioned glyph runs -> rows -> columns ->
+  issuer adapter -> normalized transactions. No Flutter, no PDF library, no I/O
+  beyond what the caller hands it. Runs on CI without a device.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+# Nothing here may pull in Flutter. Enforced by tools/check_purity.dart in CI.
+dependencies:
+  collection: ^1.18.0
+  meta: ^1.15.0
+
+dev_dependencies:
+  test: ^1.25.0
+  very_good_analysis: ^6.0.0

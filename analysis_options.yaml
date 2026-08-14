@@ -1,0 +1,23 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/build/**"
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # Money and reward maths must not silently ignore a returned Future.
+    unawaited_futures: error
+    # The rule predicate grammar is a deliberately closed set — a
+    # non-exhaustive switch over it is a bug, not a style issue. Sealed-class
+    # exhaustiveness is already a compile error in Dart 3; this covers enums.
+    exhaustive_cases: error
+
+linter:
+  rules:
+    exhaustive_cases: true
+    public_member_api_docs: false

@@ -1,0 +1,13 @@
+name: swipewise_workspace
+description: >-
+  Melos workspace root for swipewise. Not a shipped package — exists so that
+  `dart pub get` at the repo root provides melos and the purity-check script.
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dev_dependencies:
+  melos: ^6.3.2
+  very_good_analysis: ^6.0.0
+  yaml: ^3.1.2

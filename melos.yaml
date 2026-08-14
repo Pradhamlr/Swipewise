@@ -1,0 +1,47 @@
+name: swipewise
+
+packages:
+  - packages/**
+  - app
+
+ignore:
+  - tools/**
+
+command:
+  bootstrap:
+    runPubGetInParallel: true
+
+scripts:
+  analyze:
+    description: Static analysis across every package.
+    run: dart analyze --fatal-infos .
+    exec:
+      concurrency: 1
+
+  format:
+    description: Format check (CI-safe, non-mutating).
+    run: dart format --output=none --set-exit-if-changed .
+
+  test:
+    description: Run tests in every package that has them.
+    run: dart test
+    exec:
+      concurrency: 1
+    packageFilters:
+      dirExists: test
+      flutter: false
+
+  test:flutter:
+    description: Run tests in Flutter packages.
+    run: flutter test
+    exec:
+      concurrency: 1
+    packageFilters:
+      dirExists: test
+      flutter: true
+
+  # Enforces the load-bearing architectural boundary:
+  # rewards_engine and statement_parser must never import Flutter.
+  check:purity:
+    description: Fail if the pure-Dart packages gained a Flutter dependency.
+    run: dart run tools/check_purity.dart
