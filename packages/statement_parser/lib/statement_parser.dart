@@ -14,5 +14,9 @@
 /// keeps real bank documents out of the repository entirely.
 library statement_parser;
 
+export 'src/eval/extraction_score.dart';
+export 'src/eval/labeled_statement.dart';
 export 'src/model/glyph_run.dart';
+export 'src/model/money.dart';
+export 'src/model/statement_transaction.dart';
 export 'src/source/glyph_source.dart';
