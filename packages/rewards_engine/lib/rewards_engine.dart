@@ -14,6 +14,7 @@
 library rewards_engine;
 
 export 'src/chooser.dart';
+export 'src/codec/card_codec.dart';
 export 'src/evaluator.dart';
 export 'src/model/rules.dart';
 export 'src/model/spend.dart';

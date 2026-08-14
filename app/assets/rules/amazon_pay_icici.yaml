@@ -1,0 +1,43 @@
+# Amazon Pay ICICI Bank Credit Card
+#
+# The contrast card: strong rates and *no caps at all*. Its presence is what
+# makes the routing question interesting — a capped 5% card beats it on small
+# spends and loses to it on large ones, because 5% of a big number stops at the
+# ceiling while 1% of a big number does not.
+#
+# Earnings are reward points that convert to Amazon Pay balance at ₹1 a point.
+# The rate lives in point_value rather than being baked into the rules, because
+# the same point is worth different amounts through different redemption paths
+# and the optimizer must always rank in rupees.
+#
+# The 5% rate assumes an active Amazon Prime membership; it is 3% without one.
+# Prime status is a per-user fact, not a property of the card, so this bundle
+# encodes the Prime rate and the app is responsible for saying so.
+
+card: amazon-pay-icici
+name: Amazon Pay ICICI
+issuer: ICICI Bank
+version: 1
+valid_from: 2026-08-15
+source_url: https://www.icici.bank.in/personal-banking/cards/credit-card/amazon-pay-credit-card/benefits-features
+retrieved_on: 2026-08-15
+
+point_value: 1
+
+buckets: []
+
+rules:
+  - id: amazon_prime
+    description: 5% on Amazon.in for Prime members
+    when: { merchant_in: [amazon] }
+    earn: { rate: 0.05, unit: points }
+
+  - id: partner_merchants
+    description: 2% at Amazon Pay partner merchants
+    when: { merchant_in: [amazon_pay_partner] }
+    earn: { rate: 0.02, unit: points }
+
+  - id: base
+    description: 1% on all other payments, uncapped
+    when: { always: true }
+    earn: { rate: 0.01, unit: points }

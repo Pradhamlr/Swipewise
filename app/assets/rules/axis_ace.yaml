@@ -1,0 +1,67 @@
+# Axis Bank ACE Credit Card
+#
+# The interesting one. Quoting the T&C: "Capped at Rs. 500 per statement.
+# Combined capping for 5% & 4%" — one bucket shared by two different
+# accelerated rules, while the 1.5% base rate is uncapped. Modelling caps as
+# buckets that rules reference makes this three lines of data; modelling a cap
+# as a field on a rule cannot represent it at all.
+#
+# valid_from is real here: the T&C states the 1.5% rate applies w.e.f
+# 20th April 2024 (it was 2% until 19th April 2024), and the combined cap
+# w.e.f 15th June 2023.
+
+card: axis-ace
+name: Axis Bank ACE
+issuer: Axis Bank
+version: 1
+valid_from: 2024-04-20
+source_url: https://www.axis.bank.in/docs/default-source/default-document-library/credit-card/axis-bank-ace-credit-card-tncs.pdf
+retrieved_on: 2026-08-15
+
+buckets:
+  - id: accelerated_cap
+    label: Accelerated cashback
+    limit: { amount: 500, unit: cashback, period: cycle }
+
+rules:
+  # "Valid only if the payment is done by Axis ACE credit card on Google Pay."
+  # Utility spends on any other platform are excluded outright, so the rule
+  # requires both the utility MCC and the Google Pay tag.
+  - id: utility_googlepay
+    description: 5% on utility bills and recharges through Google Pay
+    when:
+      all:
+        - mcc_in: [4814, 4816, 4899, 4900]
+        - merchant_in: [google_pay]
+    earn: { rate: 0.05, unit: cashback }
+    consumes: [accelerated_cap]
+
+  - id: food_and_travel
+    description: 4% on Swiggy, Zomato and Ola
+    when: { merchant_in: [swiggy, zomato, ola] }
+    earn: { rate: 0.04, unit: cashback }
+    consumes: [accelerated_cap]
+
+  - id: base
+    description: 1.5% on other eligible merchants, uncapped
+    when: { always: true }
+    earn: { rate: 0.015, unit: cashback }
+
+# Verbatim from the T&C: "Cashback shall not be eligible on - utility spends
+# done on any platform other than Google Pay, fuel spends, EMI transactions,
+# purchases converted to EMI post facto, wallet loading transactions, cash
+# advances, rental payment, purchase of gold/jewelry items, insurance premium
+# payments, educational services, payment of outstanding balances, payment of
+# card fees and other card charges."
+exclusions:
+  tags:
+    - fuel
+    - emi
+    - wallet_load
+    - cash_advance
+    - rent
+    - gold
+    - insurance
+    - education
+    - card_fees
+    - utility_non_googlepay

@@ -47,6 +47,12 @@ dependencies:
     path: ../packages/pdf_glyph_source
   statement_parser:
     path: ../packages/statement_parser
+  rewards_engine:
+    path: ../packages/rewards_engine
+
+  # Reads the bundled rule files. The engine itself stays dependency-free and
+  # takes plain maps; only the app knows the rules are serialized as YAML.
+  yaml: ^3.1.2
 
 dev_dependencies:
   flutter_test:
@@ -69,6 +75,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # The seed rule bundle ships inside the app, so a first run works with no
+  # network at all and a failed update can never brick it.
+  assets:
+    - assets/rules/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

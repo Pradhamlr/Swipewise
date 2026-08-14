@@ -1,0 +1,48 @@
+# CASHBACK SBI Card
+#
+# Two accelerated rules, each with its own ceiling, both also drawing on a
+# single aggregate ceiling. This is the structure a cap-as-a-field-on-a-rule
+# schema cannot express, and the reason caps are modelled as named buckets.
+#
+# valid_from is the date these terms were *observed*, not the date the issuer
+# introduced them — that is not published. Transactions before this date must
+# not be evaluated under these rules; the app would rather say "unknown" than
+# apply terms it cannot date.
+
+card: sbi-cashback
+name: CASHBACK SBI Card
+issuer: SBI Card
+version: 1
+valid_from: 2026-08-15
+source_url: https://www.sbicard.com/en/faq/cashback-sbi-card-faq.page
+retrieved_on: 2026-08-15
+
+buckets:
+  - id: online_cap
+    label: Online cashback
+    limit: { amount: 2000, unit: cashback, period: cycle }
+  - id: offline_cap
+    label: Offline cashback
+    limit: { amount: 2000, unit: cashback, period: cycle }
+  - id: overall_cap
+    label: Overall cashback
+    limit: { amount: 4000, unit: cashback, period: cycle }
+
+rules:
+  - id: online
+    description: 5% on online transactions
+    when: { channel: online }
+    earn: { rate: 0.05, unit: cashback }
+    consumes: [online_cap, overall_cap]
+
+  - id: offline
+    description: 1% on offline transactions
+    when: { channel: offline }
+    earn: { rate: 0.01, unit: cashback }
+    consumes: [offline_cap, overall_cap]
+
+# "Cashback is not applicable on fuel spends." The 1% fuel surcharge waiver
+# offered instead is a reduction in cost, not a reward, and is deliberately not
+# modelled here as earnings.
+exclusions:
+  tags: [fuel]
