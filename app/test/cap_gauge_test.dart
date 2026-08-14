@@ -5,9 +5,9 @@ import 'package:swipewise/painting/cap_gauge.dart';
 import 'package:swipewise/theme/tokens.dart';
 
 Widget wrap(Widget child) => MaterialApp(
-      theme: buildSwipewiseTheme(SwipewiseTokens.dark),
-      home: Scaffold(body: Center(child: child)),
-    );
+  theme: buildSwipewiseTheme(SwipewiseTokens.dark),
+  home: Scaffold(body: Center(child: child)),
+);
 
 void main() {
   group('formatRupees', () {
@@ -89,11 +89,7 @@ void main() {
     testWidgets('is isolated behind a RepaintBoundary', (tester) async {
       await tester.pumpWidget(
         wrap(
-          const CapGauge(
-            label: 'Dining',
-            usedPaise: 1000,
-            limitPaise: 5000,
-          ),
+          const CapGauge(label: 'Dining', usedPaise: 1000, limitPaise: 5000),
         ),
       );
 

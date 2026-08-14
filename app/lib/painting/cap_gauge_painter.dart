@@ -51,8 +51,12 @@ class CapGaugePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final stroke = size.shortestSide * 0.085;
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height)
-        .deflate(stroke / 2 + size.shortestSide * 0.06);
+    final rect = Rect.fromLTWH(
+      0,
+      0,
+      size.width,
+      size.height,
+    ).deflate(stroke / 2 + size.shortestSide * 0.06);
     final centre = rect.center;
 
     final track = Paint()
@@ -69,8 +73,10 @@ class CapGaugePainter extends CustomPainter {
     // overflow is communicated by colour instead.
     final used = (usedFraction * progress).clamp(0.0, 1.0);
     final pendingStart = used;
-    final pendingEnd =
-        ((usedFraction + pendingFraction) * progress).clamp(0.0, 1.0);
+    final pendingEnd = ((usedFraction + pendingFraction) * progress).clamp(
+      0.0,
+      1.0,
+    );
     final overflows = usedFraction + pendingFraction > 1.0;
 
     if (pendingEnd > pendingStart) {
@@ -156,10 +162,7 @@ class CapGaugePainter extends CustomPainter {
     final block = centre.height + sub.height + 2;
     final top = (size.height - block) / 2;
 
-    centre.paint(
-      canvas,
-      Offset((size.width - centre.width) / 2, top),
-    );
+    centre.paint(canvas, Offset((size.width - centre.width) / 2, top));
     sub.paint(
       canvas,
       Offset((size.width - sub.width) / 2, top + centre.height + 2),

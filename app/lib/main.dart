@@ -98,8 +98,7 @@ class _CapGaugeGalleryState extends State<CapGaugeGallery> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () =>
-                      setState(() => _showPending = !_showPending),
+                  onPressed: () => setState(() => _showPending = !_showPending),
                   style: FilledButton.styleFrom(
                     backgroundColor: tokens.surfaceRaised,
                     foregroundColor: tokens.textHigh,
@@ -107,8 +106,9 @@ class _CapGaugeGalleryState extends State<CapGaugeGallery> {
                       vertical: SwipewiseTokens.space4,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(SwipewiseTokens.radius),
+                      borderRadius: BorderRadius.circular(
+                        SwipewiseTokens.radius,
+                      ),
                     ),
                   ),
                   child: Text(

@@ -1,15 +1,19 @@
-/// Pure-Dart reward rule evaluator and cycle allocator.
+/// Pure-Dart reward rule evaluator and card chooser.
 ///
-/// Two things live here and nothing else:
+/// Two ideas carry the whole design:
 ///
-/// * the **evaluator** — `marginalReward(...)`, stateful with respect to caps
-///   already consumed this cycle, so an exhausted bucket falls back rather than
-///   over-reporting;
-/// * the **optimizer** — greedy (v1) and milestone-aware allocation (v3), with
-///   the `optimal >= greedy` property test as the load-bearing proof.
+/// * **Caps are named buckets that rules reference**, not fields on rules.
+///   Real cards share one ceiling across several accelerated categories and
+///   nest per-category caps inside it; the obvious schema cannot express that.
+/// * **The evaluator is stateful with respect to the cycle.** A rule whose
+///   bucket is exhausted falls through to the next matching rule, so the same
+///   spend is worth 5% early in the cycle and 1% late in it.
 ///
-/// Zero runtime dependencies. Nothing in here may know about Flutter, files,
-/// databases, or the network.
+/// Zero runtime dependencies. Nothing here knows about Flutter, files,
+/// databases or the network.
 library rewards_engine;
 
-// Exports land here as Layer 3 and Layer 4 are built (v1 / v3).
+export 'src/chooser.dart';
+export 'src/evaluator.dart';
+export 'src/model/rules.dart';
+export 'src/model/spend.dart';
