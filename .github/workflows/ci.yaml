@@ -10,10 +10,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The pure-Dart packages carry the parser, the evaluator and the optimizer.
-  # They must build and test with no Flutter, no emulator and no device — that
-  # is the whole point of the boundary, so it gets its own fast job.
-  pure-dart:
+  # The engine packages carry the parser, the evaluator and the optimizer, and
+  # none of them may depend on Flutter. This job installs the Dart SDK and
+  # nothing else, so that claim is enforced by the environment rather than by
+  # a lint: if any of them grew a Flutter dependency, `dart pub get` here would
+  # simply fail.
+  #
+  # Deliberately does not use melos. `melos bootstrap` walks every package in
+  # the workspace, including app/, and would need Flutter installed — which
+  # would quietly destroy the very property this job is checking.
+  engine:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,30 +27,57 @@ jobs:
         with:
           sdk: stable
 
-      - name: Install melos
-        run: |
-          dart pub global activate melos 6.3.2
-          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Resolve workspace root
         run: dart pub get
 
-      - name: Bootstrap
-        run: melos bootstrap
-
       - name: Purity check (no Flutter in the engine packages)
         run: dart run tools/check_purity.dart
-
-      - name: Format
-        run: dart format --output=none --set-exit-if-changed .
-
-      - name: Analyze
-        run: melos run analyze
 
       - name: Analyze tooling
         run: dart analyze --fatal-infos tools
 
-      # --no-select: scripts with packageFilters otherwise prompt for a package
-      # interactively, which hangs a CI runner.
+      - name: rewards_engine
+        working-directory: packages/rewards_engine
+        run: |
+          dart pub get
+          dart analyze --fatal-infos .
+          dart test
+
+      - name: statement_parser
+        working-directory: packages/statement_parser
+        run: |
+          dart pub get
+          dart analyze --fatal-infos .
+          dart test
+
+      - name: pdf_glyph_source
+        working-directory: packages/pdf_glyph_source
+        run: |
+          dart pub get
+          dart analyze --fatal-infos .
+          dart test
+
+  # The Flutter half. Separate so a failure here cannot be mistaken for a
+  # failure of the engine packages, and vice versa.
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Resolve
+        working-directory: app
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: app
+        run: flutter analyze
+
       - name: Test
-        run: melos run --no-select test
+        working-directory: app
+        run: flutter test
