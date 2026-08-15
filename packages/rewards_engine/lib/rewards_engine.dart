@@ -13,6 +13,7 @@
 /// databases or the network.
 library rewards_engine;
 
+export 'src/allocation/cycle_allocation.dart';
 export 'src/chooser.dart';
 export 'src/codec/card_codec.dart';
 export 'src/evaluator.dart';

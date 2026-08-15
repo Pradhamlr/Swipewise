@@ -125,6 +125,36 @@ class RewardRule {
   final String? description;
 }
 
+/// A spend threshold that grants a lump sum once crossed.
+///
+/// **Milestones are what make cycle allocation a real optimization problem.**
+/// Caps alone are concave — every extra rupee on a card is worth the same or
+/// less than the last — and for concave rewards, routing each transaction to
+/// its best card is already close to optimal. A milestone is a step function:
+/// ₹100 more on a card can be worth ₹2,000. That single discontinuity is why
+/// greedy per-transaction routing is *provably* suboptimal, and it is the
+/// reason this project has an optimizer instead of a lookup.
+class Milestone {
+  const Milestone({
+    required this.id,
+    required this.thresholdPaise,
+    required this.grantPaise,
+    this.period = CapPeriod.cycle,
+    this.description,
+  });
+
+  final String id;
+
+  /// Cumulative eligible spend on this card within [period].
+  final int thresholdPaise;
+
+  /// Rupee value granted on crossing. A voucher's face value, not its cost.
+  final int grantPaise;
+
+  final CapPeriod period;
+  final String? description;
+}
+
 /// A card as the evaluator sees it: buckets, ordered rules, exclusions, and
 /// the provenance that makes any of it believable.
 class RewardCard {
@@ -139,6 +169,7 @@ class RewardCard {
     this.buckets = const [],
     this.excludedMccs = const {},
     this.excludedTags = const {},
+    this.milestones = const [],
     this.pointValuePaise = 0,
   });
 
@@ -155,6 +186,10 @@ class RewardCard {
   /// Spend categories that earn nothing at all on this card.
   final Set<int> excludedMccs;
   final Set<String> excludedTags;
+
+  /// Spend thresholds granting a lump sum. Ordered lowest first by
+  /// convention; the evaluator does not rely on it.
+  final List<Milestone> milestones;
 
   /// Rupee value of one point, in paise. Zero for pure cashback cards.
   final int pointValuePaise;
