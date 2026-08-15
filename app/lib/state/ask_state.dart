@@ -96,18 +96,18 @@ class AskQuery {
       merchantPresets.firstWhere((m) => m.key == merchantKey);
 
   SpendContext toSpend() => SpendContext(
-        amountPaise: amountPaise,
-        date: DateTime.now(),
-        channel: merchant.channel,
-        mcc: merchant.mcc,
-        tags: merchant.tags,
-        merchantName: merchant.label,
-      );
+    amountPaise: amountPaise,
+    date: DateTime.now(),
+    channel: merchant.channel,
+    mcc: merchant.mcc,
+    tags: merchant.tags,
+    merchantName: merchant.label,
+  );
 
   Map<String, CycleState> toCycleStates() => {
-        'sbi-cashback': CycleState({'online_cap': sbiOnlineUsedPaise}),
-        'axis-ace': CycleState({'accelerated_cap': axisAcceleratedUsedPaise}),
-      };
+    'sbi-cashback': CycleState({'online_cap': sbiOnlineUsedPaise}),
+    'axis-ace': CycleState({'accelerated_cap': axisAcceleratedUsedPaise}),
+  };
 
   AskQuery copyWith({
     int? amountPaise,
@@ -140,8 +140,7 @@ class AskNotifier extends Notifier<AskQuery> {
       state = state.copyWith(axisAcceleratedUsedPaise: paise);
 }
 
-final askProvider =
-    NotifierProvider<AskNotifier, AskQuery>(AskNotifier.new);
+final askProvider = NotifierProvider<AskNotifier, AskQuery>(AskNotifier.new);
 
 /// The seed rule bundle. Loaded once, asynchronously, from assets.
 final cardsProvider = FutureProvider<List<RewardCard>>((ref) {

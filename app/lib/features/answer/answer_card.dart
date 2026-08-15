@@ -215,7 +215,8 @@ class _AnswerCardState extends State<AnswerCard> {
           tokens,
           icon: tight ? Icons.warning_amber_rounded : Icons.check_circle,
           color: tight ? tokens.warning : tokens.accent,
-          text: '${bucket.label}: '
+          text:
+              '${bucket.label}: '
               '${formatRupees(bucket.consumedPaise + bucket.appliedPaise, decimals: false)} '
               'of ${formatRupees(bucket.limitPaise, decimals: false)} used'
               '${bucket.clamped ? " — this txn is clipped" : " · this txn fits"}',
@@ -230,7 +231,8 @@ class _AnswerCardState extends State<AnswerCard> {
           tokens,
           icon: Icons.trending_down_rounded,
           color: tokens.textMuted,
-          text: 'Next ${formatRupees(untilDrop, decimals: false)} of this kind '
+          text:
+              'Next ${formatRupees(untilDrop, decimals: false)} of this kind '
               'drops you to the base rate.',
         ),
       );
@@ -242,7 +244,8 @@ class _AnswerCardState extends State<AnswerCard> {
           tokens,
           icon: Icons.swap_horiz_rounded,
           color: tokens.textMuted,
-          text: 'Above ${formatRupees(widget.flipPaise!, decimals: false)}, '
+          text:
+              'Above ${formatRupees(widget.flipPaise!, decimals: false)}, '
               'a different card wins.',
         ),
       );

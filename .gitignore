@@ -49,6 +49,9 @@ __pycache__/
 .venv/
 venv/
 
+# Working notes: spec, decision log, roadmap, Flutter reading list. Local only.
+/docs/
+
 # Editors / OS
 .idea/
 .vscode/

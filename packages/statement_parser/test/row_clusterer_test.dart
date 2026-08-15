@@ -21,6 +21,27 @@ GlyphRun glyph(
   );
 }
 
+/// A glyph sitting *on* a baseline, which is how type actually works — the
+/// ink box grows upward from the baseline, so a short glyph and a tall one on
+/// the same line share a bottom edge, not a centre.
+GlyphRun onBaseline(
+  String text, {
+  required double x,
+  required double baseline,
+  double size = 8,
+  double width = 4,
+  int page = 0,
+}) {
+  return GlyphRun(
+    text: text,
+    pageIndex: page,
+    x: x,
+    y: baseline - size,
+    width: width,
+    height: size,
+  );
+}
+
 /// A run of glyphs laid out left to right on one baseline.
 List<GlyphRun> line(
   String text, {
@@ -94,6 +115,35 @@ void main() {
       final rows = clusterer.cluster(drifting);
       expect(rows, hasLength(1));
       expect(rows.single.glyphs, hasLength(40));
+    });
+
+    test('a decimal point stays on the line it belongs to', () {
+      // Regression, and the reason clustering keys on the baseline. A full
+      // stop inks a box a fifth the height of a digit; on a real statement
+      // this split "1443.98" into "144398" on one row and "." on another,
+      // which the running-balance check then caught as a mismatch.
+      final amount = <GlyphRun>[
+        onBaseline('1', x: 0, baseline: 100),
+        onBaseline('4', x: 5, baseline: 100),
+        onBaseline('4', x: 10, baseline: 100),
+        onBaseline('3', x: 15, baseline: 100),
+        onBaseline('.', x: 20, baseline: 100, size: 1.6, width: 1.5),
+        onBaseline('9', x: 23, baseline: 100),
+        onBaseline('8', x: 28, baseline: 100),
+      ];
+
+      final rows = clusterer.cluster(amount);
+      expect(rows, hasLength(1), reason: 'one printed number, one row');
+      expect(rows.single.text, '1443.98');
+    });
+
+    test('a tall and a short glyph on one baseline stay together', () {
+      final rows = clusterer.cluster([
+        onBaseline('A', x: 0, baseline: 50, size: 12),
+        onBaseline(',', x: 6, baseline: 50, size: 2, width: 1.5),
+        onBaseline('B', x: 10, baseline: 50, size: 12),
+      ]);
+      expect(rows, hasLength(1));
     });
 
     test('glyphs come back in reading order regardless of input order', () {
