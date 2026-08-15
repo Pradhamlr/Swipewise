@@ -19,6 +19,7 @@ export 'src/eval/balance_check.dart';
 export 'src/eval/extraction_score.dart';
 export 'src/eval/labeled_statement.dart';
 export 'src/extract/table_extractor.dart';
+export 'src/extract/table_locator.dart';
 export 'src/extract/table_schema.dart';
 export 'src/geometry/column_detector.dart';
 export 'src/geometry/glyph_row.dart';

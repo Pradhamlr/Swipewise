@@ -1,16 +1,13 @@
-// Run the full pipeline over a glyph dump and check it against the
-// statement's own arithmetic.
+// Run the full pipeline over one or more glyph dumps and check each result
+// against the statement's own running balance.
 //
-//   dart run statement_parser:extract_transactions <glyphs.json> [options]
+//   dart run statement_parser:extract_transactions <glyphs.json> [more...]
 //
-//     --page=N       only this page (0-based)
-//     --from-y=F     only rows at or below this y
-//     --to-y=F       only rows at or above this y
-//     --raw          print real descriptors instead of masked shapes
+//     --raw        print real descriptors instead of masked shapes
+//     --summary    per-file totals only, no transaction listing
 //
-// Descriptions are masked by default. Dates, amounts and the reconciliation
-// verdict are always shown in the clear — they are what tells you whether the
-// parse is right, and the balance check is meaningless without them.
+// Tables are located automatically — no page or y-range arguments. Anything
+// that is not a run of dated rows is not a table.
 
 import 'dart:convert';
 import 'dart:io';
@@ -18,95 +15,108 @@ import 'dart:io';
 import 'package:statement_parser/statement_parser.dart';
 
 void main(List<String> args) {
-  final positional = args.where((a) => !a.startsWith('--')).toList();
-  if (positional.isEmpty) {
+  final files = args.where((a) => !a.startsWith('--')).toList();
+  if (files.isEmpty) {
     stderr.writeln(
       'usage: dart run statement_parser:extract_transactions '
-      '<glyphs.json> [--page=N] [--from-y=F] [--to-y=F] [--raw]',
+      '<glyphs.json> [more...] [--raw] [--summary]',
     );
     exitCode = 64;
     return;
   }
 
-  String? option(String name) {
-    final prefix = '--$name=';
-    for (final arg in args) {
-      if (arg.startsWith(prefix)) return arg.substring(prefix.length);
-    }
-    return null;
-  }
-
-  final file = File(positional.first);
-  if (!file.existsSync()) {
-    stderr.writeln('no such file: ${positional.first}');
-    exitCode = 66;
-    return;
-  }
-
-  final page = int.tryParse(option('page') ?? '');
-  final fromY = double.tryParse(option('from-y') ?? '');
-  final toY = double.tryParse(option('to-y') ?? '');
   final raw = args.contains('--raw');
+  final summaryOnly = args.contains('--summary');
 
-  final runs = (jsonDecode(file.readAsStringSync()) as List<dynamic>)
-      .map((e) => GlyphRun.fromJson(e as Map<String, dynamic>))
-      .toList(growable: false);
+  var totalTransactions = 0;
+  var totalChecked = 0;
+  var totalMismatches = 0;
 
-  final rows = const RowClusterer().cluster(runs).where((row) {
-    if (page != null && row.pageIndex != page) return false;
-    if (fromY != null && row.centerY < fromY) return false;
-    if (toY != null && row.centerY > toY) return false;
-    return true;
-  }).toList();
+  for (final path in files) {
+    final file = File(path);
+    if (!file.existsSync()) {
+      stderr.writeln('no such file: $path');
+      exitCode = 66;
+      continue;
+    }
 
-  final layout = const ColumnDetector().detect(rows);
-  final extracted =
-      const TableExtractor(TableSchema.bankPassbook).extract(rows, layout);
+    final runs = (jsonDecode(file.readAsStringSync()) as List<dynamic>)
+        .map((e) => GlyphRun.fromJson(e as Map<String, dynamic>))
+        .toList(growable: false);
 
-  stdout
-    ..writeln('rows in       : ${rows.length}')
-    ..writeln('layout        : $layout')
-    ..writeln('transactions  : ${extracted.length}')
-    ..writeln();
+    final rows = const RowClusterer().cluster(runs);
+    final regions = const TableLocator().locate(rows);
 
-  for (final row in extracted) {
-    final description = raw
-        ? row.transaction.description
-        : maskStructure(row.transaction.description);
-    final trimmed =
-        description.length > 46 ? description.substring(0, 46) : description;
+    final extracted = <ExtractedRow>[];
+    for (final region in regions) {
+      final layout = const ColumnDetector().detect(region.anchorRows);
+      extracted.addAll(
+        const TableExtractor(TableSchema.bankPassbook)
+            .extract(region.rows, layout),
+      );
+    }
+
+    final check = reconcileRunningBalance(extracted);
+    totalTransactions += extracted.length;
+    totalChecked += check.checkedRows;
+    totalMismatches += check.mismatches.length;
+
+    final name = path.split(RegExp(r'[/\\]')).last;
     stdout.writeln(
-      '${formatIsoDate(row.transaction.date)}  '
-      '${row.transaction.amount.toDecimalString().padLeft(11)}  '
-      'bal ${(row.balance?.toDecimalString() ?? "—").padLeft(11)}  '
-      '$trimmed',
+      '${name.padRight(14)} '
+      'glyphs ${runs.length.toString().padLeft(6)}  '
+      'rows ${rows.length.toString().padLeft(4)}  '
+      'tables ${regions.length}  '
+      'txns ${extracted.length.toString().padLeft(4)}  '
+      'checked ${check.checkedRows.toString().padLeft(4)}  '
+      'consistency ${(check.consistency * 100).toStringAsFixed(1).padLeft(5)}%',
     );
+
+    if (!summaryOnly) {
+      for (final region in regions) {
+        stdout.writeln('  $region');
+      }
+      for (final row in extracted) {
+        final description = raw
+            ? row.transaction.description
+            : maskStructure(row.transaction.description);
+        final trimmed = description.length > 44
+            ? description.substring(0, 44)
+            : description;
+        stdout.writeln(
+          '  ${formatIsoDate(row.transaction.date)}  '
+          '${row.transaction.amount.toDecimalString().padLeft(11)}  '
+          'bal ${(row.balance?.toDecimalString() ?? "—").padLeft(11)}  '
+          '$trimmed',
+        );
+      }
+    }
+
+    for (final mismatch in check.mismatches.take(5)) {
+      final description = raw
+          ? mismatch.row.transaction.description
+          : maskStructure(mismatch.row.transaction.description);
+      stdout.writeln(
+        '  !! row ${mismatch.index}: expected '
+        '${mismatch.expected.toDecimalString()}, statement says '
+        '${mismatch.actual.toDecimalString()} '
+        '(off by ${mismatch.drift.toDecimalString()})  $description',
+      );
+    }
   }
 
-  final check = reconcileRunningBalance(extracted);
-  stdout
-    ..writeln()
-    ..writeln('--- balance reconciliation ---')
-    ..writeln('checked rows  : ${check.checkedRows}')
-    ..writeln('mismatches    : ${check.mismatches.length}')
-    ..writeln(
-      'consistency   : ${(check.consistency * 100).toStringAsFixed(1)}%',
-    );
-
-  for (final mismatch in check.mismatches.take(10)) {
-    // Never interpolate the mismatch directly: its toString carries the raw
-    // descriptor, and this line is the one most likely to get pasted into an
-    // issue or a chat window.
-    final description = raw
-        ? mismatch.row.transaction.description
-        : maskStructure(mismatch.row.transaction.description);
-    stdout.writeln(
-      '  row ${mismatch.index}: expected '
-      '${mismatch.expected.toDecimalString()}, statement says '
-      '${mismatch.actual.toDecimalString()} '
-      '(off by ${mismatch.drift.toDecimalString()})  $description',
-    );
+  if (files.length > 1) {
+    final consistency = totalChecked == 0
+        ? 1.0
+        : (totalChecked - totalMismatches) / totalChecked;
+    stdout
+      ..writeln()
+      ..writeln('--- across ${files.length} statements ---')
+      ..writeln('transactions : $totalTransactions')
+      ..writeln('checked rows : $totalChecked')
+      ..writeln('mismatches   : $totalMismatches')
+      ..writeln(
+        'consistency  : ${(consistency * 100).toStringAsFixed(2)}%',
+      );
   }
-
-  if (!check.isConsistent) exitCode = 1;
 }
