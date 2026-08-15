@@ -27,11 +27,21 @@ jobs:
         with:
           sdk: stable
 
-      - name: Format
-        run: dart format --output=none --set-exit-if-changed .
+      # Everything resolves first. `dart format` picks its style from the
+      # enclosing package's language version, which it can only read once
+      # package_config.json exists — and the style genuinely differs, because
+      # Dart 3.7 changed the formatter. Format before resolving and every file
+      # gets reformatted against the wrong rules.
+      - name: Resolve
+        run: |
+          dart pub get
+          dart pub get --directory packages/rewards_engine
+          dart pub get --directory packages/statement_parser
+          dart pub get --directory packages/pdf_glyph_source
 
-      - name: Resolve workspace root
-        run: dart pub get
+      # app/ is formatted in its own job, where Flutter can resolve it.
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed packages tools
 
       - name: Purity check (no Flutter in the engine packages)
         run: dart run tools/check_purity.dart
@@ -42,21 +52,18 @@ jobs:
       - name: rewards_engine
         working-directory: packages/rewards_engine
         run: |
-          dart pub get
           dart analyze --fatal-infos .
           dart test
 
       - name: statement_parser
         working-directory: packages/statement_parser
         run: |
-          dart pub get
           dart analyze --fatal-infos .
           dart test
 
       - name: pdf_glyph_source
         working-directory: packages/pdf_glyph_source
         run: |
-          dart pub get
           dart analyze --fatal-infos .
           dart test
 
@@ -73,6 +80,10 @@ jobs:
       - name: Resolve
         working-directory: app
         run: flutter pub get
+
+      - name: Format
+        working-directory: app
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
         working-directory: app
