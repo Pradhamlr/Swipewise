@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:pdf_glyph_source/pdf_glyph_source.dart';
+import 'package:pdfrx/pdfrx.dart' show Pdfrx;
 import 'package:swipewise/import/import_events.dart';
 import 'package:swipewise/import/import_pipeline.dart';
 
@@ -12,10 +13,14 @@ import 'package:swipewise/import/import_pipeline.dart';
 /// copied on the way in; the glyphs, which are large, are created *inside* the
 /// isolate and only the finished result comes back.
 class _ImportJob {
-  const _ImportJob(this.send, this.path, this.password);
+  const _ImportJob(this.send, this.path, this.password, this.cachePath);
   final SendPort send;
   final String path;
   final String? password;
+
+  /// Carried across explicitly because PDFium's configuration lives in
+  /// statics, and statics do not cross an isolate boundary.
+  final String? cachePath;
 }
 
 /// Parse a statement off the UI thread, reporting each stage as it goes.
@@ -51,7 +56,7 @@ Stream<ImportEvent> importStatement({required String path, String? password}) {
 
   Isolate.spawn(
         _importEntry,
-        _ImportJob(receive.sendPort, path, password),
+        _ImportJob(receive.sendPort, path, password, Pdfrx.cacheDirectoryPath),
         errorsAreFatal: true,
         debugName: 'statement-import',
       )
@@ -72,7 +77,10 @@ Future<void> _importEntry(_ImportJob job) async {
   final send = job.send;
   try {
     send.send(const ImportProgress(ImportStage.reading));
-    final source = PdfiumGlyphSource.file(job.path);
+    final source = PdfiumGlyphSource.file(
+      job.path,
+      cacheDirectoryPath: job.cachePath,
+    );
 
     send.send(const ImportProgress(ImportStage.extractingGlyphs));
     final glyphs = await source.extract(password: job.password);

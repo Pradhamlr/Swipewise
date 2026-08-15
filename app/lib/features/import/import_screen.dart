@@ -99,7 +99,10 @@ class ImportScreen extends ConsumerWidget {
           _StageList(status: status, stages: _stages),
         ],
 
-        if (status.error != null) ...[
+        if (status.needsPassword) ...[
+          const SizedBox(height: SwipewiseTokens.space5),
+          const _PasswordPrompt(),
+        ] else if (status.error != null) ...[
           const SizedBox(height: SwipewiseTokens.space5),
           _ErrorPanel(message: status.error!),
         ],
@@ -194,6 +197,117 @@ class _StageDot extends StatelessWidget {
       child: done
           ? Icon(Icons.check, size: 11, color: tokens.background)
           : null,
+    );
+  }
+}
+
+/// Asks for the statement's password and retries.
+///
+/// A separate surface from the error panel because it is not an error — most
+/// Indian statements are encrypted, so this is the normal path, not the sad
+/// one. The password goes straight to PDFium and is never stored: re-picking
+/// the file is avoided by remembering the path, not the secret.
+class _PasswordPrompt extends ConsumerStatefulWidget {
+  const _PasswordPrompt();
+
+  @override
+  ConsumerState<_PasswordPrompt> createState() => _PasswordPromptState();
+}
+
+class _PasswordPromptState extends ConsumerState<_PasswordPrompt> {
+  final _controller = TextEditingController();
+  var _obscured = true;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final password = _controller.text;
+    if (password.isEmpty) return;
+    ref.read(importProvider.notifier).retryWithPassword(password);
+    _controller.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+
+    return Container(
+      padding: const EdgeInsets.all(SwipewiseTokens.space4),
+      decoration: BoxDecoration(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(SwipewiseTokens.radius),
+        border: Border.all(color: tokens.warning.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This statement is password protected',
+            style: TextStyle(
+              color: tokens.textHigh,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'It is checked on this device and never stored.',
+            style: TextStyle(color: tokens.textMuted, fontSize: 12),
+          ),
+          const SizedBox(height: SwipewiseTokens.space3),
+          TextField(
+            controller: _controller,
+            obscureText: _obscured,
+            autofocus: true,
+            onSubmitted: (_) => _submit(),
+            style: TextStyle(color: tokens.textHigh),
+            decoration: InputDecoration(
+              hintText: 'Password',
+              hintStyle: TextStyle(color: tokens.textMuted),
+              filled: true,
+              fillColor: tokens.surfaceRaised,
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscured ? Icons.visibility_off : Icons.visibility,
+                  size: 18,
+                  color: tokens.textMuted,
+                ),
+                onPressed: () => setState(() => _obscured = !_obscured),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(SwipewiseTokens.radius),
+                borderSide: BorderSide(color: tokens.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(SwipewiseTokens.radius),
+                borderSide: BorderSide(color: tokens.border),
+              ),
+            ),
+          ),
+          const SizedBox(height: SwipewiseTokens.space3),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: tokens.accent,
+                foregroundColor: tokens.background,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(SwipewiseTokens.radius),
+                ),
+              ),
+              child: const Text(
+                'Unlock and parse',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

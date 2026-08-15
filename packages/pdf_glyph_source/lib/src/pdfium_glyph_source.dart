@@ -10,14 +10,26 @@ import 'package:statement_parser/statement_parser.dart';
 /// this project exists to do by hand. Taking the rawest available signal keeps
 /// every geometric decision in `statement_parser`, where it is measurable.
 class PdfiumGlyphSource implements GlyphSource {
-  const PdfiumGlyphSource.file(this.path);
+  const PdfiumGlyphSource.file(this.path, {this.cacheDirectoryPath});
 
   /// Path to the PDF on disk.
   final String path;
 
+  /// Writable directory PDFium may use for its cache.
+  ///
+  /// Must be supplied on Android. Left to itself, `pdfrxInitialize` falls back
+  /// to `Platform.environment['HOME']!` — and Android sets no `HOME`, so that
+  /// `!` throws "Null check operator used on a null value" with nothing in the
+  /// message to suggest a cache directory was ever involved.
+  ///
+  /// It cannot be inherited from the main isolate either: the library keeps
+  /// its configuration in statics, and statics are per-isolate. Whoever spawns
+  /// the isolate has to hand the path across explicitly.
+  final String? cacheDirectoryPath;
+
   @override
   Future<List<GlyphRun>> extract({String? password}) async {
-    await pdfrxInitialize();
+    await pdfrxInitialize(tmpPath: cacheDirectoryPath);
 
     final document = await PdfDocument.openFile(
       path,

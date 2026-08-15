@@ -58,10 +58,24 @@ class ImportStatus {
 class ImportNotifier extends Notifier<ImportStatus> {
   StreamSubscription<ImportEvent>? _subscription;
 
+  /// Remembered so a password can be supplied without re-picking the file.
+  /// The password itself is never stored — it is passed straight through to
+  /// PDFium and forgotten.
+  String? _lastPath;
+  String? _lastFileName;
+
   @override
   ImportStatus build() {
     ref.onDispose(() => _subscription?.cancel());
     return const ImportStatus();
+  }
+
+  /// Retry the last file with a password the user just typed.
+  Future<void> retryWithPassword(String password) async {
+    final path = _lastPath;
+    final name = _lastFileName;
+    if (path == null || name == null) return;
+    await start(path: path, fileName: name, password: password);
   }
 
   Future<void> start({
@@ -71,6 +85,8 @@ class ImportNotifier extends Notifier<ImportStatus> {
   }) async {
     await _subscription?.cancel();
 
+    _lastPath = path;
+    _lastFileName = fileName;
     state = ImportStatus(running: true, fileName: fileName);
 
     _subscription = importStatement(path: path, password: password).listen((

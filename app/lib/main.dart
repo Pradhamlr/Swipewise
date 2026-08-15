@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:swipewise/features/ask/ask_screen.dart';
 import 'package:swipewise/features/cards/cards_screen.dart';
 import 'package:swipewise/features/import/import_screen.dart';
 import 'package:swipewise/theme/tokens.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Resolves the bundled PDFium library and, importantly, works out a
+  // writable cache directory using Flutter's platform channels. The parse
+  // itself happens on a background isolate, which cannot do either of those
+  // things — so the directory is discovered here and handed across.
+  await pdfrxFlutterInitialize();
+
   runApp(const ProviderScope(child: SwipewiseApp()));
 }
 
