@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:swipewise/features/ask/ask_screen.dart';
 import 'package:swipewise/features/cards/cards_screen.dart';
+import 'package:swipewise/features/import/import_screen.dart';
 import 'package:swipewise/theme/tokens.dart';
 
 void main() {
@@ -41,7 +42,7 @@ class _HomeShellState extends State<HomeShell> {
       body: SafeArea(
         child: IndexedStack(
           index: _index,
-          children: const [AskScreen(), CardsScreen()],
+          children: const [AskScreen(), CardsScreen(), ImportScreen()],
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -59,6 +60,11 @@ class _HomeShellState extends State<HomeShell> {
             icon: Icon(Icons.speed_outlined),
             selectedIcon: Icon(Icons.speed),
             label: 'Caps',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.file_upload_outlined),
+            selectedIcon: Icon(Icons.file_upload),
+            label: 'Import',
           ),
         ],
       ),
